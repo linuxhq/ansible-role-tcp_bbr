@@ -1,0 +1,38 @@
+---
+- name: Overlay modules-load.d tcp_bbr configuration
+  tags: tcp_bbr
+  become: true
+  lineinfile:
+    create: true
+    line: "{{ item }}"
+    path: /etc/modules-load.d/tcp_bbr.conf
+    owner: root
+    group: root
+    mode: 0600
+    state: present
+  notify: execute modprobe
+  loop: "{{ tcp_bbr_modules }}"
+
+- name: Ensure sysctl base directory exists
+  tags: tcp_bbr
+  become: true
+  file:
+    mode: 0755
+    path: "{{ tcp_bbr_sysctl|dirname }}"
+    state: directory
+
+- name: Overlay sysctl tcp_bbr configuration
+  tags: tcp_bbr
+  become: true
+  sysctl:
+    name: "{{ item.token }}"
+    reload: false
+    state: present
+    sysctl_file: "{{ tcp_bbr_sysctl }}"
+    sysctl_set: false
+    value: "{{ item.value }}"
+  notify: reload sysctl
+  loop: "{{ tcp_bbr_settings }}"
+  loop_control:
+    label: "{{ item.token }}"
+...
